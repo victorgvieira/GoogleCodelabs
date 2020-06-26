@@ -16,6 +16,8 @@
 
 package com.example.android.advancedcoroutines
 
+import com.example.android.advancedcoroutines.util.CacheOnSuccess
+import com.example.android.advancedcoroutines.utils.ComparablePair
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 
@@ -53,6 +55,28 @@ class PlantRepository private constructor(
     private fun shouldUpdatePlantsCache(): Boolean {
         // suspending function, so you can e.g. check the status of the database here
         return true
+    }
+
+    /**
+     * Fetch the custom sort order from the network and then cache in memory
+     */
+    private var plantListSortOderCache = CacheOnSuccess(onErrorFallback = { listOf<String>() }) {
+        plantService.customPlantSortOrder()
+    }
+
+    /**
+     * Rearrange the list, Placing [Plant] that are in the
+     * customSortOrder at the front of the list
+     */
+    private fun List<Plant>.applySort(customSortOrder: List<String>): List<Plant> {
+        return sortedBy { plant ->
+            val positionForItem = customSortOrder.indexOf(plant.plantId).let { order ->
+                if (order > -1)
+                    order
+                else Int.MAX_VALUE
+            }
+            ComparablePair(positionForItem, plant.name)
+        }
     }
 
     /**
@@ -94,7 +118,8 @@ class PlantRepository private constructor(
     companion object {
 
         // For Singleton instantiation
-        @Volatile private var instance: PlantRepository? = null
+        @Volatile
+        private var instance: PlantRepository? = null
 
         fun getInstance(plantDao: PlantDao, plantService: NetworkService) =
             instance ?: synchronized(this) {
