@@ -16,13 +16,16 @@
 
 package com.example.android.advancedcoroutines
 
+import androidx.annotation.AnyThread
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.liveData
 import androidx.lifecycle.map
+import androidx.lifecycle.switchMap
 import com.example.android.advancedcoroutines.util.CacheOnSuccess
 import com.example.android.advancedcoroutines.utils.ComparablePair
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Repository module for handling data operations.
@@ -60,13 +63,34 @@ class PlantRepository private constructor(
 //    fun getPlantsWithGrowZone(growZone: GrowZone) =
 //        plantDao.getPlantsWithGrowZoneNumber(growZone.number)
     // DONE replace with liveData
-    fun getPlantsWithGrowZone(growZone: GrowZone) = liveData<List<Plant>> {
-        val plantsGrowZoneLiveData = plantDao.getPlantsWithGrowZoneNumber(growZone.number)
-        val customSortOrder = plantsListSortOrderCache.getOrAwait()
-        emitSource(plantsGrowZoneLiveData.map { plantList ->
-            plantList.applySort(customSortOrder)
-        })
-    }
+    fun getPlantsWithGrowZone(growZone: GrowZone) =
+    // DONE Update the block to use a switchMap, which will let you point to a new LiveData every time a new value is received
+
+//        liveData<List<Plant>> {
+//        val plantsGrowZoneLiveData = plantDao.getPlantsWithGrowZoneNumber(growZone.number)
+//        val customSortOrder = plantsListSortOrderCache.getOrAwait()
+//        emitSource(plantsGrowZoneLiveData.map { plantList ->
+//            plantList.applySort(customSortOrder)
+//        })
+//}
+        // NOTE: the previous uses emitSource and this only emit
+        plantDao.getPlantsWithGrowZoneNumber(growZone.number)
+            .switchMap { plantList ->
+                liveData {
+                    val customSortOrder = plantsListSortOrderCache.getOrAwait()
+                    emit(plantList.applyMainSafeSort(customSortOrder))
+                }
+            }
+
+    // DONE: Adding the MainSafe method
+    @AnyThread
+    suspend fun List<Plant>.applyMainSafeSort(customSortOrder: List<String>) =
+    // Change the execution to any Dispatcher(Main, IO, Default)
+    // Note: if remove the 'suspend' from the method, it gives a compile error
+        //  because withContext its from CoroutineContext
+        withContext(defaultDispatcher) {
+            this@applyMainSafeSort.applySort(customSortOrder)
+        }
 
 
     /**
