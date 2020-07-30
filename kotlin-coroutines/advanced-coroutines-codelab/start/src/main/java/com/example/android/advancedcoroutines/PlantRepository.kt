@@ -25,7 +25,7 @@ import com.example.android.advancedcoroutines.util.CacheOnSuccess
 import com.example.android.advancedcoroutines.utils.ComparablePair
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.withContext
 
 /**
@@ -60,6 +60,27 @@ class PlantRepository private constructor(
     // DONE adding Flow
     val plantsFlow: Flow<List<Plant>>
         get() = plantDao.getPlantsFlow()
+            // When the result of customSortFlow is available,
+            // this will combine it with the latest value from
+            // the flow above.  Thus, as long as both `plants`
+            // and `sortOrder` are have an initial value (their
+            // flow has emitted at least one value), any change
+            // to either `plants` or `sortOrder`  will call
+            // `plants.applySort(sortOrder)`.
+            // DONE Add combine operator
+            .combine(
+                customSortFlow
+                // Logging flow
+//                .onEach {
+//                    Log.d("Flow", "onEach customSortFlow")
+//                    delay(2000)
+//                }
+//                .onStart { Log.d("Flow", "onStart customSortFlow") }
+            ) { plants, sortOrder ->
+                plants.applySort(sortOrder)
+            }
+            .flowOn(defaultDispatcher)
+            .conflate()
 
     // DONE adding Flow
     fun getPlantsWithGrowZoneFlow(growZoneNumber: GrowZone): Flow<List<Plant>> {
@@ -117,6 +138,23 @@ class PlantRepository private constructor(
     private var plantsListSortOrderCache = CacheOnSuccess(onErrorFallback = { listOf<String>() }) {
         plantService.customPlantSortOrder()
     }
+
+    // DONE new private flow
+//    private val customSortFlow = flow { emit(plantsListSortOrderCache.getOrAwait()) }
+    // or
+    private val customSortFlow = plantsListSortOrderCache::getOrAwait.asFlow()
+    // DONE example: emit twice with a substantial delay to see how the combine operator works
+//    private val customSortFlow = suspend {
+//        Log.d("Flow", "Calling first cache")
+//        plantsListSortOrderCache.getOrAwait()
+//    }.asFlow()
+//        .onStart {
+//            Log.d("Flow", "Emmitting List")
+//            emit(listOf())
+//            Log.d("Flow", "Emmit done")
+//            delay(1500)
+//            Log.d("Flow", "Delay done")
+//        }
 
     /**
      * Rearrange the list, Placing [Plant] that are in the
