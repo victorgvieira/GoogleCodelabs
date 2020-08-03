@@ -59,6 +59,7 @@ class PlantRepository private constructor(
 
     // DONE adding Flow
     val plantsFlow: Flow<List<Plant>>
+        // NOTE: this is the declarative style to load sort order e apply to list - concurrently
         get() = plantDao.getPlantsFlow()
             // When the result of customSortFlow is available,
             // this will combine it with the latest value from
@@ -85,6 +86,13 @@ class PlantRepository private constructor(
     // DONE adding Flow
     fun getPlantsWithGrowZoneFlow(growZoneNumber: GrowZone): Flow<List<Plant>> {
         return plantDao.getPlantsWithGrowZoneNumberFlow(growZoneNumber = growZoneNumber.number)
+            // DONE Add map transformation
+            .map { plantList ->
+                // NOTE: this is the imperative style to load sort order e apply to list - sequential
+                val sortOrderFromNetwork = plantsListSortOrderCache.getOrAwait()
+                val nextValue = plantList.applyMainSafeSort(sortOrderFromNetwork)
+                nextValue
+            }
     }
 
     /**
