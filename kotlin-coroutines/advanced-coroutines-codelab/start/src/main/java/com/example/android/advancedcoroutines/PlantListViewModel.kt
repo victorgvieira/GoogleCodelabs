@@ -18,6 +18,9 @@ package com.example.android.advancedcoroutines
 
 import androidx.lifecycle.*
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.ConflatedBroadcastChannel
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 
 /**
@@ -67,8 +70,20 @@ class PlantListViewModel internal constructor(
         }
     }
 
+    // DONE add new variable
+    private val growZoneChannel = ConflatedBroadcastChannel<GrowZone>()
+
+    val plantsUsingFlow: LiveData<List<Plant>> = growZoneChannel.asFlow()
+        .flatMapLatest { growZone ->
+            if (growZone == NoGrowZone) {
+                plantRepository.plantsFlow
+            } else {
+                plantRepository.getPlantsWithGrowZoneFlow(growZone)
+            }
+        }.asLiveData()
+
     // DONE adding Flow
-    val plantsUsingFlow: LiveData<List<Plant>> = plantRepository.plantsFlow.asLiveData()
+//    val plantsUsingFlow: LiveData<List<Plant>> = plantRepository.plantsFlow.asLiveData()
 
     init {
         // When creating a new ViewModel, clear the grow zone and perform any related udpates
@@ -86,6 +101,8 @@ class PlantListViewModel internal constructor(
      */
     fun setGrowZoneNumber(num: Int) {
         growZone.value = GrowZone(num)
+        // DONE Notify to the channel that the filter changed
+        growZoneChannel.offer(GrowZone(num))
 
         // initial code version, will move during flow rewrite
         launchDataLoad { plantRepository.tryUpdateRecentPlantsCache() }
@@ -99,6 +116,8 @@ class PlantListViewModel internal constructor(
      */
     fun clearGrowZoneNumber() {
         growZone.value = NoGrowZone
+        // DONE Notify to the channel that the filter changed
+        growZoneChannel.offer(NoGrowZone)
 
         // initial code version, will move during flow rewrite
         launchDataLoad { plantRepository.tryUpdateRecentPlantsCache() }
