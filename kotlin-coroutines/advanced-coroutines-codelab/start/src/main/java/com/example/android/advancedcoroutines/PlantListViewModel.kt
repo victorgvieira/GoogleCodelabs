@@ -90,21 +90,13 @@ class PlantListViewModel internal constructor(
         clearGrowZoneNumber()
 
         // DONE put the logic for making the network calls
-        growZoneChannel.asFlow()
-            .mapLatest { growZone ->
-                _spinner.value = true
-                if (growZone == NoGrowZone) {
-                    plantRepository.tryUpdateRecentPlantsCache()
-                } else {
-                    plantRepository.tryUpdateRecentPlantsForGrowZoneCache(growZone)
-                }
-                _spinner.value = false
-            }.onCompletion {
-                Log.d("Flow", "onCompletion never called")
-                _spinner.value = false
-            }.catch { throwable ->
-                _snackbar.value = throwable.message
-            }.launchIn(viewModelScope)
+        loadDataFor(growZoneChannel) { growZone ->
+            if (growZone == NoGrowZone) {
+                plantRepository.tryUpdateRecentPlantsCache()
+            } else {
+                plantRepository.tryUpdateRecentPlantsForGrowZoneCache(growZone)
+            }
+        }
 
         // DONE adding Flow: fetch the full plant list
 //        launchDataLoad { plantRepository.tryUpdateRecentPlantsCache() }
@@ -163,16 +155,31 @@ class PlantListViewModel internal constructor(
      *              the lambda, the loading spinner will display. After completion or error, the
      *              loading spinner will stop.
      */
-    private fun launchDataLoad(block: suspend () -> Unit): Job {
-        return viewModelScope.launch {
-            try {
+//    private fun launchDataLoad(block: suspend () -> Unit): Job {
+//        return viewModelScope.launch {
+//            try {
+//                _spinner.value = true
+//                block()
+//            } catch (error: Throwable) {
+//                _snackbar.value = error.message
+//            } finally {
+//                _spinner.value = false
+//            }
+//        }
+//    }
+
+    // DONE extra challenge
+    fun <T> loadDataFor(source: ConflatedBroadcastChannel<T>, block: suspend (T) -> Unit) {
+        source.asFlow()
+            .mapLatest { value ->
                 _spinner.value = true
-                block()
-            } catch (error: Throwable) {
-                _snackbar.value = error.message
-            } finally {
+                block(value)
                 _spinner.value = false
-            }
-        }
+            }.onCompletion {
+                Log.d("Flow", "onCompletion never called")
+                _spinner.value = false
+            }.catch { throwable ->
+                _snackbar.value = throwable.message
+            }.launchIn(viewModelScope)
     }
 }
