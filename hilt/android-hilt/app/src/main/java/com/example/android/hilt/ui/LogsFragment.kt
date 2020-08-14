@@ -30,14 +30,24 @@ import com.example.android.hilt.R
 import com.example.android.hilt.data.Log
 import com.example.android.hilt.data.LoggerLocalDataSource
 import com.example.android.hilt.util.DateFormatter
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 /**
  * Fragment that displays the database logs.
  */
+// DONE mark this fragment to use Hilt:
+//  @AndroidEntryPoint creates a dependencies container that follows the Android class lifecycle
+@AndroidEntryPoint
 class LogsFragment : Fragment() {
 
-    private lateinit var logger: LoggerLocalDataSource
-    private lateinit var dateFormatter: DateFormatter
+    // DONE Inject values instead request from ServiceLocator
+    @Inject
+    lateinit var logger: LoggerLocalDataSource
+
+    // DONE Inject values instead request from ServiceLocator
+    @Inject
+    lateinit var dateFormatter: DateFormatter
 
     private lateinit var recyclerView: RecyclerView
 
@@ -55,17 +65,18 @@ class LogsFragment : Fragment() {
         }
     }
 
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-
-        populateFields(context)
-    }
-
-    private fun populateFields(context: Context) {
-        logger = (context.applicationContext as LogApplication).serviceLocator.loggerLocalDataSource
-        dateFormatter =
-            (context.applicationContext as LogApplication).serviceLocator.provideDateFormatter()
-    }
+    // DONE Remove code after @Inject: Hilt will do this onAttach lifecycle
+//    override fun onAttach(context: Context) {
+//        super.onAttach(context)
+//
+//        populateFields(context)
+//    }
+//
+//    private fun populateFields(context: Context) {
+//        logger = (context.applicationContext as LogApplication).serviceLocator.loggerLocalDataSource
+//        dateFormatter =
+//            (context.applicationContext as LogApplication).serviceLocator.provideDateFormatter()
+//    }
 
     override fun onResume() {
         super.onResume()
