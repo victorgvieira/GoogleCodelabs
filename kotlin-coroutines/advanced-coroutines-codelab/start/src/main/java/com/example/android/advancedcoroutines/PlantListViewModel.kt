@@ -16,12 +16,11 @@
 
 package com.example.android.advancedcoroutines
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.switchMap
-import androidx.lifecycle.viewModelScope
+import android.util.Log
+import androidx.lifecycle.*
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.ConflatedBroadcastChannel
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 /**
@@ -48,6 +47,7 @@ class PlantListViewModel internal constructor(
         get() = _snackbar
 
     private val _spinner = MutableLiveData<Boolean>(false)
+
     /**
      * Show a loading spinner if true
      */
@@ -70,9 +70,36 @@ class PlantListViewModel internal constructor(
         }
     }
 
+    // DONE add new variable
+    private val growZoneChannel = ConflatedBroadcastChannel<GrowZone>()
+
+    val plantsUsingFlow: LiveData<List<Plant>> = growZoneChannel.asFlow()
+        .flatMapLatest { growZone ->
+            if (growZone == NoGrowZone) {
+                plantRepository.plantsFlow
+            } else {
+                plantRepository.getPlantsWithGrowZoneFlow(growZone)
+            }
+        }.asLiveData()
+
+    // DONE adding Flow
+//    val plantsUsingFlow: LiveData<List<Plant>> = plantRepository.plantsFlow.asLiveData()
+
     init {
         // When creating a new ViewModel, clear the grow zone and perform any related udpates
         clearGrowZoneNumber()
+
+        // DONE put the logic for making the network calls
+        loadDataFor(growZoneChannel) { growZone ->
+            if (growZone == NoGrowZone) {
+                plantRepository.tryUpdateRecentPlantsCache()
+            } else {
+                plantRepository.tryUpdateRecentPlantsForGrowZoneCache(growZone)
+            }
+        }
+
+        // DONE adding Flow: fetch the full plant list
+//        launchDataLoad { plantRepository.tryUpdateRecentPlantsCache() }
     }
 
     /**
@@ -83,9 +110,11 @@ class PlantListViewModel internal constructor(
      */
     fun setGrowZoneNumber(num: Int) {
         growZone.value = GrowZone(num)
+        // DONE Notify to the channel that the filter changed
+        growZoneChannel.offer(GrowZone(num))
 
         // initial code version, will move during flow rewrite
-        launchDataLoad { plantRepository.tryUpdateRecentPlantsCache() }
+//        launchDataLoad { plantRepository.tryUpdateRecentPlantsCache() }
     }
 
     /**
@@ -96,9 +125,11 @@ class PlantListViewModel internal constructor(
      */
     fun clearGrowZoneNumber() {
         growZone.value = NoGrowZone
+        // DONE Notify to the channel that the filter changed
+        growZoneChannel.offer(NoGrowZone)
 
         // initial code version, will move during flow rewrite
-        launchDataLoad { plantRepository.tryUpdateRecentPlantsCache() }
+//        launchDataLoad { plantRepository.tryUpdateRecentPlantsCache() }
     }
 
     /**
@@ -124,16 +155,31 @@ class PlantListViewModel internal constructor(
      *              the lambda, the loading spinner will display. After completion or error, the
      *              loading spinner will stop.
      */
-    private fun launchDataLoad(block: suspend () -> Unit): Job {
-        return viewModelScope.launch {
-            try {
+//    private fun launchDataLoad(block: suspend () -> Unit): Job {
+//        return viewModelScope.launch {
+//            try {
+//                _spinner.value = true
+//                block()
+//            } catch (error: Throwable) {
+//                _snackbar.value = error.message
+//            } finally {
+//                _spinner.value = false
+//            }
+//        }
+//    }
+
+    // DONE extra challenge
+    fun <T> loadDataFor(source: ConflatedBroadcastChannel<T>, block: suspend (T) -> Unit) {
+        source.asFlow()
+            .mapLatest { value ->
                 _spinner.value = true
-                block()
-            } catch (error: Throwable) {
-                _snackbar.value = error.message
-            } finally {
+                block(value)
                 _spinner.value = false
-            }
-        }
+            }.onCompletion {
+                Log.d("Flow", "onCompletion never called")
+                _spinner.value = false
+            }.catch { throwable ->
+                _snackbar.value = throwable.message
+            }.launchIn(viewModelScope)
     }
 }
