@@ -21,11 +21,14 @@ import android.os.Looper
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * Data manager class that handles data manipulation between the database and the UI.
  */
 // DONE Add @Inject on the constructor to let Hilt know how to provide an instance
+// DONE Add @Singleton(scope annotation) to provide the same instance through all the application
+@Singleton
 class LoggerLocalDataSource @Inject constructor(private val logDao: LogDao) {
 
     private val executorService: ExecutorService = Executors.newFixedThreadPool(4)
