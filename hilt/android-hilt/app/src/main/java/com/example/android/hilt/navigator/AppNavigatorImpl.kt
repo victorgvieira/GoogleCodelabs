@@ -20,11 +20,15 @@ import androidx.fragment.app.FragmentActivity
 import com.example.android.hilt.R
 import com.example.android.hilt.ui.ButtonsFragment
 import com.example.android.hilt.ui.LogsFragment
+import javax.inject.Inject
 
 /**
  * Navigator implementation.
  */
-class AppNavigatorImpl(private val activity: FragmentActivity) : AppNavigator {
+// DONE annotate Inject to the constructor to tell hilt that it can provide instances
+// NOTE: activity:FragmentActivity is a predefined binding,
+//  it works because AppNavigatorImpl is provided by a module installed in ActivityComponent
+class AppNavigatorImpl @Inject constructor(private val activity: FragmentActivity) : AppNavigator {
 
     override fun navigateTo(screen: Screens) {
         val fragment = when (screen) {

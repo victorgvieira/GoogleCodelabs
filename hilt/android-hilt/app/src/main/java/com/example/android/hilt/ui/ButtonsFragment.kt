@@ -28,14 +28,22 @@ import com.example.android.hilt.R
 import com.example.android.hilt.data.LoggerLocalDataSource
 import com.example.android.hilt.navigator.AppNavigator
 import com.example.android.hilt.navigator.Screens
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 /**
  * Fragment that displays buttons whose interactions are recorded.
  */
+// DONE Refactor to use Hilt
+@AndroidEntryPoint
 class ButtonsFragment : Fragment() {
+    // DONE Refactor to use Hilt
+    @Inject
+    lateinit var logger: LoggerLocalDataSource
 
-    private lateinit var logger: LoggerLocalDataSource
-    private lateinit var navigator: AppNavigator
+    // DONE Refactor to use Hilt
+    @Inject
+    lateinit var navigator: AppNavigator
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -45,19 +53,20 @@ class ButtonsFragment : Fragment() {
         return inflater.inflate(R.layout.fragment_buttons, container, false)
     }
 
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
+    // DONE Refactor to use Hilt
+//    override fun onAttach(context: Context) {
+//        super.onAttach(context)
 
-        populateFields(context)
-    }
+//        populateFields(context)
+//    }
 
-    private fun populateFields(context: Context) {
-        logger = (context.applicationContext as LogApplication).
-            serviceLocator.loggerLocalDataSource
-
-        navigator = (context.applicationContext as LogApplication).
-            serviceLocator.provideNavigator(activity!!)
-    }
+    // DONE Refactor to use Hilt
+//    private fun populateFields(context: Context) {
+//        logger = (context.applicationContext as LogApplication).serviceLocator.loggerLocalDataSource
+//
+//        navigator =
+//            (context.applicationContext as LogApplication).serviceLocator.provideNavigator(activity!!)
+//    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         view.findViewById<Button>(R.id.button1).setOnClickListener {

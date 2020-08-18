@@ -22,11 +22,11 @@ import dagger.hilt.android.HiltAndroidApp
 // DONE Annotate to add a container that is attached to app lifecycle
 @HiltAndroidApp
 class LogApplication : Application() {
-
-    lateinit var serviceLocator: ServiceLocator
-
-    override fun onCreate() {
-        super.onCreate()
-        serviceLocator = ServiceLocator(applicationContext)
-    }
+    // DONE Refactor to use Hilt
+// lateinit var serviceLocator: ServiceLocator
+//
+//    override fun onCreate() {
+//        super.onCreate()
+//        serviceLocator = ServiceLocator(applicationContext)
+//    }
 }
