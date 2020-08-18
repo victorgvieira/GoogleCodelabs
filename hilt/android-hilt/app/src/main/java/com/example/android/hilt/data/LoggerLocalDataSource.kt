@@ -29,14 +29,17 @@ import javax.inject.Singleton
 // DONE Add @Inject on the constructor to let Hilt know how to provide an instance
 // DONE Add @Singleton(scope annotation) to provide the same instance through all the application
 @Singleton
-class LoggerLocalDataSource @Inject constructor(private val logDao: LogDao) {
+// DONE implement the LoggerDataSource interface
+class LoggerLocalDataSource @Inject constructor(private val logDao: LogDao) : LoggerDataSource {
 
     private val executorService: ExecutorService = Executors.newFixedThreadPool(4)
     private val mainThreadHandler by lazy {
         Handler(Looper.getMainLooper())
     }
 
-    fun addLog(msg: String) {
+    // DONE Mark its methods with override
+//    fun addLog(msg: String) {
+    override fun addLog(msg: String) {
         executorService.execute {
             logDao.insertAll(
                 Log(
@@ -47,14 +50,18 @@ class LoggerLocalDataSource @Inject constructor(private val logDao: LogDao) {
         }
     }
 
-    fun getAllLogs(callback: (List<Log>) -> Unit) {
+    // DONE Mark its methods with override
+//   fun getAllLogs(callback: (List<Log>) -> Unit) {
+    override fun getAllLogs(callback: (List<Log>) -> Unit) {
         executorService.execute {
             val logs = logDao.getAll()
             mainThreadHandler.post { callback(logs) }
         }
     }
 
-    fun removeLogs() {
+    // DONE Mark its methods with override
+//   fun removeLogs() {
+    override fun removeLogs() {
         executorService.execute {
             logDao.nukeTable()
         }
