@@ -1,9 +1,10 @@
-# About this codelab
+# [Jetpack Compose basics](https://developer.android.com/codelabs/jetpack-compose-basics)
 
 updated Jul 13, 2023
+
 Written by a Googler
 
-## 1. Before you begin
+### 1. Before you begin
 
 [Jetpack Compose](https://developer.android.com/jetpack/compose) is a modern toolkit designed to
 simplify UI development. It combines a reactive programming model with the conciseness and ease of
